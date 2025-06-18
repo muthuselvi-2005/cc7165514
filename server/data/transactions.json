@@ -1,0 +1,37 @@
+[
+  {
+    "transaction_type": "income",
+    "amount": "100000",
+    "catagory": "salary",
+    "description": "salary",
+    "id": 1750162314098
+  },
+  {
+    "transaction_type": "income",
+    "amount": "20000",
+    "catagory": "Investment",
+    "description": "Invest",
+    "id": 1750162408469
+  },
+  {
+    "transaction_type": "expense",
+    "amount": "4000",
+    "catagory": "Shopping",
+    "description": "shopping",
+    "id": 1750162450954
+  },
+  {
+    "transaction_type": "expense",
+    "amount": "5000",
+    "catagory": "electricity Bill",
+    "description": "elec Bills",
+    "id": 1750162493817
+  },
+  {
+    "transaction_type": "income",
+    "amount": "50000",
+    "catagory": "Freelance",
+    "description": "freelance",
+    "id": 1750162533813
+  }
+]
