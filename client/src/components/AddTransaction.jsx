@@ -1,41 +1,27 @@
 import React, { useState } from 'react';
 
-const AddTransaction = ({ addTransaction, setCurrentPage }) => {
+const AddTransaction = ({ setCurrentPage }) => {
   const [formData, setFormData] = useState({
     type: 'expense',
     amount: '',
     category: '',
     description: '',
     customCategory: ''
+    
   });
 
   const [errors, setErrors] = useState({});
   const [showCustomCategory, setShowCustomCategory] = useState(false);
 
   const expenseCategories = [
-    'Food & Dining',
-    'Transportation',
-    'Shopping',
-    'Entertainment',
-    'Bills & Utilities',
-    'Healthcare',
-    'Education',
-    'Travel',
-    'Home & Garden',
-    'Personal Care',
-    'Insurance',
-    'Other'
+    'Food & Dining', 'Transportation', 'Shopping', 'Entertainment',
+    'Bills & Utilities', 'Healthcare', 'Education', 'Travel',
+    'Home & Garden', 'Personal Care', 'Insurance', 'Other'
   ];
 
   const incomeCategories = [
-    'Salary',
-    'Freelance',
-    'Business',
-    'Investment',
-    'Rental',
-    'Gift',
-    'Bonus',
-    'Other'
+    'Salary', 'Freelance', 'Business', 'Investment',
+    'Rental', 'Gift', 'Bonus', 'Other'
   ];
 
   const getCurrentCategories = () => {
@@ -48,8 +34,7 @@ const AddTransaction = ({ addTransaction, setCurrentPage }) => {
       ...prev,
       [name]: value
     }));
-    
-    // Clear error when user starts typing
+
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -62,7 +47,7 @@ const AddTransaction = ({ addTransaction, setCurrentPage }) => {
     setFormData(prev => ({
       ...prev,
       type: e.target.value,
-      category: '', // Reset category when type changes
+      category: '',
       customCategory: ''
     }));
     setShowCustomCategory(false);
@@ -89,7 +74,6 @@ const AddTransaction = ({ addTransaction, setCurrentPage }) => {
 
   const validateForm = () => {
     const newErrors = {};
-
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
       newErrors.amount = 'Please enter a valid amount';
     }
@@ -110,43 +94,49 @@ const AddTransaction = ({ addTransaction, setCurrentPage }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+
+    if (!validateForm()) return;
 
     const transaction = {
       type: formData.type,
       amount: parseFloat(formData.amount),
       category: formData.customCategory || formData.category,
-      description: formData.description.trim()
+      description: formData.description.trim(),
+      date: new Date().toISOString().split('T')[0]
     };
 
-    addTransaction(transaction);
-    
-   
-    setFormData({
-      type: 'expense',
-      amount: '',
-      category: '',
-      description: '',
-      customCategory: ''
-    });
-    setShowCustomCategory(false);
-    setErrors({});
+    try {
+      const res = await fetch('http://localhost:5000/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(transaction)
+      });
 
-    
-    alert('Transaction added successfully!');
-    setCurrentPage('home');
+      if (!res.ok) throw new Error('Failed to add transaction');
+
+      alert('Transaction added successfully!');
+      setFormData({
+        type: 'expense',
+        amount: '',
+        category: '',
+        description: '',
+        customCategory: ''
+      });
+      setShowCustomCategory(false);
+      setErrors({});
+      setCurrentPage('home');
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
   };
 
   return (
     <div className="add-transaction-container">
-      
-    <form onSubmit={handleSubmit} className="transaction-form">
-        
+      <form onSubmit={handleSubmit} className="transaction-form">
+
+        {/* Transaction Type */}
         <div className="form-group">
           <label className="form-label">Transaction Type </label>
           <div className="radio-group">
@@ -179,7 +169,7 @@ const AddTransaction = ({ addTransaction, setCurrentPage }) => {
         <div className="form-group">
           <label htmlFor="amount" className="form-label">Amount</label>
           <div className="amount-input-wrapper">
-            <span className="currency-symbol">$</span>
+            <span className="currency-symbol">₹</span>
             <input
               type="number"
               id="amount"
@@ -195,7 +185,7 @@ const AddTransaction = ({ addTransaction, setCurrentPage }) => {
           {errors.amount && <span className="error-message">{errors.amount}</span>}
         </div>
 
-       
+        {/* Category */}
         <div className="form-group">
           <label htmlFor="category" className="form-label">Category</label>
           <select
@@ -209,12 +199,12 @@ const AddTransaction = ({ addTransaction, setCurrentPage }) => {
             {getCurrentCategories().map(category => (
               <option key={category} value={category}>{category}</option>
             ))}
-            
+            <option value="custom">Custom</option>
           </select>
           {errors.category && <span className="error-message">{errors.category}</span>}
         </div>
 
-       
+        {/* Custom Category */}
         {showCustomCategory && (
           <div className="form-group">
             <label htmlFor="customCategory" className="form-label">Custom Category *</label>
@@ -231,7 +221,7 @@ const AddTransaction = ({ addTransaction, setCurrentPage }) => {
           </div>
         )}
 
-        
+        {/* Description */}
         <div className="form-group">
           <label htmlFor="description" className="form-label">Description *</label>
           <textarea
@@ -246,13 +236,11 @@ const AddTransaction = ({ addTransaction, setCurrentPage }) => {
           {errors.description && <span className="error-message">{errors.description}</span>}
         </div>
 
-        
+        {/* Actions */}
         <div className="form-actions">
-          <button type="submit" className="submit-btn">
-            Add Transaction
-          </button>
-          <button 
-            type="button" 
+          <button type="submit" className="submit-btn">Add Transaction</button>
+          <button
+            type="button"
             className="cancel-btn"
             onClick={() => setCurrentPage('home')}
           >
@@ -261,7 +249,7 @@ const AddTransaction = ({ addTransaction, setCurrentPage }) => {
         </div>
       </form>
 
-      
+      {/* Preview Section */}
       {(formData.amount || formData.category || formData.description) && (
         <div className="transaction-preview">
           <h3>Preview</h3>
@@ -278,7 +266,7 @@ const AddTransaction = ({ addTransaction, setCurrentPage }) => {
               {formData.description || 'No description'}
             </p>
             <span className={`preview-amount ${formData.type}`}>
-              {formData.type === 'income' ? '+' : '-'}${formData.amount || '0.00'}
+              {formData.type === 'income' ? '+' : '-'}₹{formData.amount || '0.00'}
             </span>
           </div>
         </div>

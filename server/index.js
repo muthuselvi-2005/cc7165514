@@ -1,74 +1,65 @@
-const express=require('express');
-const cors= require('cors');
-const fs=require('fs');
-const path=require('path');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const Transaction = require("./models/Transaction");
 
-const app=express();
-const PORT=5000;
-const DATA_PATH=path.join(__dirname,"data","transactions.json");
+const app = express();
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
 
-const readTransactions =()=> JSON.parse(fs.readFileSync(DATA_PATH));
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("Connected to MongoDB");
+  })
+  .catch((error) => {
+    console.error("Error connecting to MongoDB:", error);
+    process.exit(1); 
+  });
 
-const writeTransactions =(data)=>{
-    fs.writeFileSync(DATA_PATH, JSON.stringify(data,null,2));
-}
-
-app.get('/',(req,res)=>{
-    res.send('API is running!');
-});
-
-app.get('/api/transactions',(req,res)=>{
-    try{
-        const transactions= readTransactions();
-        res.json(transactions);
-    }
-    catch(error){
-        res.status(500).json({message:'Error reading transactions data'});
-    }
-});
-
-app.get('/api/transactions/:id',(req,res)=>{
-    const transactions=readTransactions();
-    const transaction=transactions.find(t=>t.id === parseInt(req.params.id));
-    if(transaction){
-        res.json(transaction);
-    }
-    else{
-        res.status(404).json({message:'Transaction not found'});
-    }
-});
-
-app.post("/api/transactions",(req,res)=>{
-    const transactions=readTransactions();
-    const newTransaction={...req.body,id: Date.now()};
-    transactions.push(newTransaction);
-    writeTransactions(transactions);
-    res.status(201).json(newTransaction);
-});
-
-app.put("/api/transactions/:id",(req,res)=>{
-    let transactions=readTransactions();
-    let id=parseInt(req.params.id);
-    transactions=transactions.map((t)=>(t.id === id? {...t,...req.body}:t));
-    writeTransactions(transactions);
-    res.json({message:"Transaction updated successfully"});
-})
-
-app.delete("/api/transactions/:id",(req,res)=>{
-    let transactions=readTransactions();
-    transactions=transactions.filter(t=>t.id !== parseInt(req.params.id));
-    writeTransactions(transactions);
-    res.json({message:"Transaction deleted successfully"});
-});
-
-app.use((req,res)=>{
-    res.status(404).json({message:"Route not found"});
+app.get("/", (req, res) => {
+  res.send("API is running!");
 });
 
 
-app.listen(PORT,()=>{
-    console.log(`server is listening on http://localhost:${PORT}`);
-})
+app.get("/api/transactions", async (req, res) => {
+  const transactions= await Transaction.find();
+  res.json(transactions);
+});
+
+
+app.get("/api/transactions/:id", async (req, res) => {
+  const transaction= await Transaction.findById(req.params.id);
+  if(transaction) res.json(transaction);
+  else res.status(404).json({ message: "Transaction not found" });
+});
+
+
+app.post("/api/transactions", async (req, res) => {
+  const newTransaction = new Transaction(req.body);
+  await newTransaction.save();
+  res.status(201).json({ message: "Transaction added successfully", transaction: newTransaction });
+});
+
+
+app.put("/api/transactions/:id", async (req, res) => {
+  await Transaction.findByIdAndUpdate(req.params.id, req.body);
+  res.json({ message: "Transaction updated successfully" });
+});
+
+
+app.delete("/api/transactions/:id", async (req, res) => {
+  await Transaction.findByIdAndDelete(req.params.id);
+  res.json({ message: "Transaction deleted successfully" });
+});
+
+app.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});

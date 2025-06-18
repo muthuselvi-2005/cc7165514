@@ -33,5 +33,12 @@
     "catagory": "Freelance",
     "description": "freelance",
     "id": 1750162533813
+  },
+  {
+    "transaction_type": "income",
+    "amount": 200000,
+    "catagory": "salary",
+    "description": "salary",
+    "id": 1750215894220
   }
 ]

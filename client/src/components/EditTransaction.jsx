@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-const EditTransaction = ({ editingTransaction, updateTransaction, setCurrentPage }) => {
+const EditTransaction = ({ editingTransaction, setCurrentPage, onTransactionUpdated }) => {
   const [formData, setFormData] = useState({
     type: 'expense',
     amount: '',
@@ -13,121 +14,77 @@ const EditTransaction = ({ editingTransaction, updateTransaction, setCurrentPage
   const [showCustomCategory, setShowCustomCategory] = useState(false);
 
   const expenseCategories = [
-    'Food & Dining',
-    'Transportation',
-    'Shopping',
-    'Entertainment',
-    'Bills & Utilities',
-    'Healthcare',
-    'Education',
-    'Travel',
-    'Home & Garden',
-    'Personal Care',
-    'Insurance',
-    'Other'
+    'Food & Dining', 'Transportation', 'Shopping', 'Entertainment',
+    'Bills & Utilities', 'Healthcare', 'Education', 'Travel',
+    'Home & Garden', 'Personal Care', 'Insurance', 'Other'
   ];
-
   const incomeCategories = [
-    'Salary',
-    'Freelance',
-    'Business',
-    'Investment',
-    'Rental',
-    'Gift',
-    'Bonus',
-    'Other'
+    'Salary', 'Freelance', 'Business', 'Investment',
+    'Rental', 'Gift', 'Bonus', 'Other'
   ];
 
-  // Populate form with existing transaction data
   useEffect(() => {
     if (editingTransaction) {
-      const categories = editingTransaction.type === 'expense' ? expenseCategories : incomeCategories;
-      const isCustomCategory = !categories.includes(editingTransaction.category);
-      
+      const isCustom = !getCurrentCategories(editingTransaction.type).includes(editingTransaction.category);
       setFormData({
         type: editingTransaction.type,
         amount: editingTransaction.amount.toString(),
-        category: isCustomCategory ? '' : editingTransaction.category,
-        description: editingTransaction.description,
-        customCategory: isCustomCategory ? editingTransaction.category : ''
+        category: isCustom ? '' : editingTransaction.category,
+        customCategory: isCustom ? editingTransaction.category : '',
+        description: editingTransaction.description
       });
-      
-      setShowCustomCategory(isCustomCategory);
+      setShowCustomCategory(isCustom);
     }
   }, [editingTransaction]);
 
-  const getCurrentCategories = () => {
-    return formData.type === 'expense' ? expenseCategories : incomeCategories;
+  const getCurrentCategories = (type = formData.type) => {
+    return type === 'expense' ? expenseCategories : incomeCategories;
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Clear error when user starts typing
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
   const handleTypeChange = (e) => {
     const newType = e.target.value;
-    const newCategories = newType === 'expense' ? expenseCategories : incomeCategories;
     const currentCategory = formData.customCategory || formData.category;
-    
-    // Check if current category exists in new type's categories
-    const categoryExists = newCategories.includes(currentCategory);
-    
+    const valid = getCurrentCategories(newType).includes(currentCategory);
+
     setFormData(prev => ({
       ...prev,
       type: newType,
-      category: categoryExists ? currentCategory : '',
-      customCategory: categoryExists ? '' : (currentCategory && !categoryExists ? currentCategory : '')
+      category: valid ? currentCategory : '',
+      customCategory: valid ? '' : currentCategory
     }));
-    
-    setShowCustomCategory(!categoryExists && currentCategory);
+    setShowCustomCategory(!valid && !!currentCategory);
   };
 
   const handleCategoryChange = (e) => {
     const value = e.target.value;
     if (value === 'custom') {
       setShowCustomCategory(true);
-      setFormData(prev => ({
-        ...prev,
-        category: '',
-        customCategory: ''
-      }));
+      setFormData(prev => ({ ...prev, category: '', customCategory: '' }));
     } else {
       setShowCustomCategory(false);
-      setFormData(prev => ({
-        ...prev,
-        category: value,
-        customCategory: ''
-      }));
+      setFormData(prev => ({ ...prev, category: value, customCategory: '' }));
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
-
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
       newErrors.amount = 'Please enter a valid amount';
     }
-
     if (!formData.category && !formData.customCategory) {
       newErrors.category = 'Please select or enter a category';
     }
-
     if (!formData.description.trim()) {
       newErrors.description = 'Please enter a description';
     }
-
     if (showCustomCategory && !formData.customCategory.trim()) {
       newErrors.customCategory = 'Please enter a custom category';
     }
@@ -136,63 +93,37 @@ const EditTransaction = ({ editingTransaction, updateTransaction, setCurrentPage
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     const updatedTransaction = {
-      ...editingTransaction,
       type: formData.type,
       amount: parseFloat(formData.amount),
       category: formData.customCategory || formData.category,
       description: formData.description.trim()
     };
 
-    updateTransaction(updatedTransaction);
-    
-    // Reset form
-    setFormData({
-      type: 'expense',
-      amount: '',
-      category: '',
-      description: '',
-      customCategory: ''
-    });
-    setShowCustomCategory(false);
-    setErrors({});
-
-    alert('Transaction updated successfully!');
-    setCurrentPage('home');
+    try {
+      await axios.put(`http://localhost:5000/api/transactions/${editingTransaction._id}`, updatedTransaction);
+      alert('Transaction updated successfully!');
+      if (onTransactionUpdated) onTransactionUpdated();
+      setCurrentPage('home');
+    } catch (error) {
+      console.error('Failed to update transaction:', error);
+      alert('Error updating transaction');
+    }
   };
 
   const handleCancel = () => {
-    // Reset form
-    setFormData({
-      type: 'expense',
-      amount: '',
-      category: '',
-      description: '',
-      customCategory: ''
-    });
-    setShowCustomCategory(false);
-    setErrors({});
     setCurrentPage('home');
   };
 
   if (!editingTransaction) {
     return (
-      <div className="add-transaction-container">
-        <p>No transaction selected for editing.</p>
-        <button 
-          type="button" 
-          className="cancel-btn"
-          onClick={() => setCurrentPage('home')}
-        >
-          Back to Home
-        </button>
+      <div>
+        <p>No transaction selected.</p>
+        <button onClick={handleCancel} className="cancel-btn">Back to Home</button>
       </div>
     );
   }
@@ -235,7 +166,7 @@ const EditTransaction = ({ editingTransaction, updateTransaction, setCurrentPage
         <div className="form-group">
           <label htmlFor="amount" className="form-label">Amount</label>
           <div className="amount-input-wrapper">
-            <span className="currency-symbol">$</span>
+            <span className="currency-symbol">₹</span>
             <input
               type="number"
               id="amount"
@@ -334,7 +265,7 @@ const EditTransaction = ({ editingTransaction, updateTransaction, setCurrentPage
               {formData.description || 'No description'}
             </p>
             <span className={`preview-amount ${formData.type}`}>
-              {formData.type === 'income' ? '+' : '-'}${formData.amount || '0.00'}
+              {formData.type === 'income' ? '+' : '-'}₹{formData.amount || '0.00'}
             </span>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Home from './components/Home';
 import AddTransaction from './components/AddTransaction';
 import EditTransaction from './components/EditTransaction';
@@ -9,28 +9,65 @@ function App() {
   const [transactions, setTransactions] = useState([]);
   const [editingTransaction, setEditingTransaction] = useState(null);
 
+  
+  useEffect(() => {
+    fetch('http://localhost:5000/api/transactions')
+      .then(res => res.json())
+      .then(data => setTransactions(data))
+      .catch(err => console.error('Error fetching transactions:', err));
+  }, []);
+
+
   const addTransaction = (transaction) => {
     const newTransaction = {
       ...transaction,
-      id: Date.now(),
-      date: new Date().toISOString().split('T')[0]
+      date: new Date().toISOString().split('T')[0],
     };
-    setTransactions([newTransaction, ...transactions]);
+
+    fetch('http://localhost:5000/api/transactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newTransaction),
+    })
+      .then(res => res.json())
+      .then(data => {
+        setTransactions([data, ...transactions]);
+        setCurrentPage('home');
+      })
+      .catch(err => console.error('Error adding transaction:', err));
   };
 
-  const deleteTransaction = (id) => {
-    setTransactions(transactions.filter(t => t.id !== id));
+  
+  const deleteTransaction = (_id) => {
+    fetch(`http://localhost:5000/api/transactions/${_id}`, {
+      method: 'DELETE',
+    })
+      .then(() => {
+        setTransactions(transactions.filter(t => t._id !== _id));
+      })
+      .catch(err => console.error('Error deleting transaction:', err));
   };
 
+ 
   const editTransaction = (transaction) => {
     setEditingTransaction(transaction);
+    setCurrentPage('edit');
   };
 
+ 
   const updateTransaction = (updatedTransaction) => {
-    setTransactions(transactions.map(t => 
-      t.id === updatedTransaction.id ? updatedTransaction : t
-    ));
-    setEditingTransaction(null);
+    fetch(`http://localhost:5000/api/transactions/${updatedTransaction._id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedTransaction),
+    })
+      .then(res => res.json())
+      .then(data => {
+        setTransactions(transactions.map(t => (t._id === data._id ? data : t)));
+        setEditingTransaction(null);
+        setCurrentPage('home');
+      })
+      .catch(err => console.error('Error updating transaction:', err));
   };
 
   return (
