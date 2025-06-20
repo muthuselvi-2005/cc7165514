@@ -105,7 +105,7 @@ const EditTransaction = ({ editingTransaction, setCurrentPage, onTransactionUpda
     };
 
     try {
-      await axios.put(`http://localhost:5000/api/transactions/${editingTransaction._id}`, updatedTransaction);
+      await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/transactions/${editingTransaction._id}`, updatedTransaction);
       alert('Transaction updated successfully!');
       if (onTransactionUpdated) onTransactionUpdated();
       setCurrentPage('home');

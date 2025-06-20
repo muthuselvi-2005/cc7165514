@@ -11,7 +11,7 @@ function App() {
 
   
   useEffect(() => {
-    fetch('http://localhost:5000/api/transactions')
+    fetch('${import.meta.env.VITE_BACKEND_URL}/api/transactions')
       .then(res => res.json())
       .then(data => setTransactions(data))
       .catch(err => console.error('Error fetching transactions:', err));
@@ -24,7 +24,7 @@ function App() {
       date: new Date().toISOString().split('T')[0],
     };
 
-    fetch('http://localhost:5000/api/transactions', {
+    fetch('${import.meta.env.VITE_BACKEND_URL}/api/transactions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newTransaction),
@@ -39,7 +39,7 @@ function App() {
 
   
   const deleteTransaction = (_id) => {
-    fetch(`http://localhost:5000/api/transactions/${_id}`, {
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/transactions/${_id}`, {
       method: 'DELETE',
     })
       .then(() => {
@@ -56,7 +56,7 @@ function App() {
 
  
   const updateTransaction = (updatedTransaction) => {
-    fetch(`http://localhost:5000/api/transactions/${updatedTransaction._id}`, {
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/transactions/${updatedTransaction._id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedTransaction),

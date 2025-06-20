@@ -12,7 +12,7 @@ const Home = ({ setCurrentPage, editTransaction }) => {
 
   const fetchTransactions = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/transactions');
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/transactions`);
       console.log("Fetched Data:", response.data);
       setTransactions(response.data);
     } catch (error) {
@@ -23,7 +23,7 @@ const Home = ({ setCurrentPage, editTransaction }) => {
 
   const deleteTransaction = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/transactions/${id}`);
+      await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/api/transactions/${id}`);
       setTransactions(prev => prev.filter(t => t._id !== id));
     } catch (error) {
       console.error("Delete failed:", error);
